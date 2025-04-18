@@ -1,0 +1,45 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    networks:
+      - demo
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=astral_user
+      - POSTGRES_PASSWORD=astral_password
+      - POSTGRES_DB=astral_db
+    ports:
+      - "5433:5433"  # Expose PostgreSQL on port 5433
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - .:/var/www
+    networks:
+      - demo
+    environment:
+      APP_ENV: local
+      APP_KEY: base64:YOUR_GENERATED_KEY_HERE
+      APP_URL: http://localhost:9000
+      DB_CONNECTION: pgsql
+      DB_HOST: postgres
+      DB_PORT: 5433
+      DB_DATABASE: astral_db
+      DB_USERNAME: astral_user
+      DB_PASSWORD: astral_password
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "9000:80"  # Map port 80 of the container to port 9000 on the host
+    volumes:
+      - .:/var/www
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf  # Use a custom Nginx configuration
+    networks:
+      - demo
+
+networks:
+  demo:
+    driver: bridge
